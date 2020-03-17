@@ -1,0 +1,43 @@
+##  Set to 'prod' to mark this job as a ververica-supported deployment
+env: dev
+
+vpDeploymentTarget: "top-speed"
+vpNamespace: "top-speed"
+
+###  Will be added if present
+## annotations:
+## labels:
+
+maxSavepointCreationAttempts: 4
+maxJobCreationAttempts: 4
+
+resources:
+  jobmanager:
+    cpu: "1"
+    memory: 1g
+  taskmanager:
+    memory: 1g
+
+parallelism: 1
+
+flinkConfiguration:
+  state.checkpoints.dir: "s3://fts-ff-sf2020-state/top-speed/checkpoints/"
+  state.savepoints.dir: "s3://fts-ff-sf2020-state/top-speed/savepoints/"
+  high-availability.storageDir: "s3://fts-ff-sf2020-state/top-speed/high-availability/"
+
+log4jLoggers:
+  "": INFO  #  Root logger
+  com.fintechstudios: DEBUG
+
+#  Should be set dynamically during deployment
+artifactJarUri: "s3://fts-ff-sf2020-artifacts/top-speed/latest.jar"
+artifactFlinkVersion: "1.10"
+artifactFlinkImageRegistry: "registry.platform.data-artisans.net"
+artifactFlinkImageRepository: "v2.1/flink"
+artifactFlinkImageTag: "1.10.0-stream1-scala_2.11"
+artifactEntryClass: "com.fintechstudios.ff_sf2020.top_speed.TopSpeed"
+
+podAnnotations:
+  # AWS annotations supported by kube2iam with access to get the Jar Artifact from S3
+  iam.amazonaws.com/role: "k8s-dev-us-east-1-ff-sf2020-top-speed-role"
+

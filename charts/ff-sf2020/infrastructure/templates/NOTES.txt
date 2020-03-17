@@ -1,0 +1,12 @@
+Successfully deployed a VpNamespace and a VpDeploymentTarget!
+
+Get the VpNamespace:
+
+    kubectl get vpnamespace/{{.Values.vpNamespace.name}} -n {{.Release.Namespace}}
+
+Get the VpDeploymentTarget:
+
+     kubectl get vpdeploymenttarget/{{.Values.vpDeploymentTarget.name}} -n {{.Release.Namespace}}
+
+
+You can now view these resources in the Ververica Platform UI and start submitting jobs to them.

@@ -1,0 +1,11 @@
+apiVersion: ververicaplatform.fintechstudios.com/v1beta1
+kind: VpNamespace
+metadata:
+  name: {{.Values.vpNamespace.name}}
+  labels:
+    {{ include "infrastructure.labels" . | nindent 4 }}
+spec:
+  roleBindings:
+    - role: "owner"
+      members:
+        - "system:authenticated"

@@ -1,0 +1,7 @@
+vpNamespace:
+  ##  Name of the namespace, which will be referenced by any VpDeployments
+  name: "top-speed"
+
+vpDeploymentTarget:
+  ##  Name of the target, which will be referenced by any VpDeployments
+  name: "top-speed"

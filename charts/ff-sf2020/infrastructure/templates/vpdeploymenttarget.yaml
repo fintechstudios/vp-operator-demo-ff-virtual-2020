@@ -1,0 +1,13 @@
+apiVersion: ververicaplatform.fintechstudios.com/v1beta2
+kind: VpDeploymentTarget
+metadata:
+  name: {{.Values.vpDeploymentTarget.name}}
+  labels:
+    {{ include "infrastructure.labels" . | nindent 4 }}
+spec:
+  metadata:
+    namespace: {{.Values.vpNamespace.name}}
+  spec:
+    kubernetes:
+      # deploy into the same namespace as the release
+      namespace: {{.Release.Namespace}}

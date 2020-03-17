@@ -1,0 +1,6 @@
+target-branch: master
+chart-dirs:
+  - charts/ff-sf2020
+chart-repos:
+  - stable=https://kubernetes-charts.storage.googleapis.com/
+  - incubator=https://kubernetes-charts-incubator.storage.googleapis.com/

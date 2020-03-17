@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ template "top-speed.fullname" . }}-params-config
+  labels:
+    {{ include "top-speed.labels" . | nindent 4 }}
+data:
+  params.properties: |
+    eviction-sec=10
+    trigger-meters=50
+

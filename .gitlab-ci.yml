@@ -1,0 +1,304 @@
+stages:
+  - build
+  - test
+  - release # push all release artifacts
+  - deploy-dev # deploy to the dev cluster
+
+# Bazel
+
+# see: https://blog.donbowman.ca/2018/09/03/navigating-the-restrictions-of-ci-and-bazel/
+#      https://blog.bazel.build/2016/01/27/continuous-integration.html
+.bazel-job: &bazel-job
+  image:
+    name: l.gcr.io/google/bazel:2.0.0
+    entrypoint: [""]
+  # since gitlab only caches in the project workspace, must manually move the cache file around
+  variables:
+    TEST_TMPDIR: $CI_PROJECT_DIR/../.cache # where bazel puts the cache
+
+  cache:
+    # bazel should be smart enough to know when to invalidate the cache, but don't want other builds
+    # having the ability to affect the master build - build
+    key: bazel-$CI_COMMIT_REF_NAME
+    paths:
+      - .cache
+
+  before_script:
+    - mkdir -p .cache
+    - rm -rf $TEST_TMPDIR
+    - mkdir $TEST_TMPDIR
+    - mv .cache/* $TEST_TMPDIR
+
+  after_script:
+    - mv $TEST_TMPDIR .
+
+.bazel-test-job: &bazel-test-job
+  extends: .bazel-job
+  stage: test
+  artifacts:
+    reports:
+      junit:
+        - .artifacts/testlogs/**/*/test.xml
+  needs:
+    - "bazel-build"
+
+bazel-build:
+  extends: .bazel-job
+  stage: build
+  script:
+    - bazel build //...
+
+bazel-unit-test:
+  <<: *bazel-test-job
+  script:
+    - bazel test //:unit-tests
+
+bazel-integration-test:
+  extends: .bazel-test-job
+  script:
+    - ./scripts/bazel-test-dotenv.sh $ENV_FILE //:int-tests
+
+bazel-lint:
+  extends: .bazel-test-job
+  script:
+    - bazel test //:lint
+
+## Helm Charts
+
+.chart-repo-job: &chart-repo-job
+  image:
+    name: fintechstudios/helm-s3
+    entrypoint: [""]
+  cache:
+    key: charts-$CI_COMMIT_SHA # per job
+    paths:
+      - .charts # the chart build dir - perhaps pass this in as a param to the build script
+  before_script:
+    - apk add --update bash
+    - source ./scripts/helm-charts.sh
+    - setup_helm_client
+
+chart-repo-build:
+  extends: .chart-repo-job
+  stage: build
+  script:
+    - ./scripts/helm-charts charts/ff-sf2020
+  needs: [] # can always be started immediately
+
+lint-charts:
+  stage: test
+  image: gcr.io/kubernetes-charts-ci/test-image:v3.3.2
+  script:
+    - git fetch origin master # Needed for change detection
+    - ct lint --config chart-tool.yaml --chart-yaml-schema chart-schema.yaml --validate-maintainers=false
+  needs:
+    - "chart-repo-build"
+
+## Artifact Releasing
+
+.artifacts-store: &artifacts-store
+  extends: .bazel-job
+  variables:
+    ARTIFACTS_S3_BUCKET: fts-ff-sf2020-artifacts
+    # ARTIFACT_DIR: ""  # must override, the top-level module directory
+    # ARTIFACT_BUILD_DIR: "" # defaults to ${ARTIFACT_DIR}, where to find the build output
+  stage: release
+  only:
+    refs:
+      - master
+  before_script:
+    - curl https://bootstrap.pypa.io/get-pip.py > get-pip.py
+    - python get-pip.py
+    - pip install awscli
+  script:
+    - ./scripts/artifact-sync.sh build ${ARTIFACT_DIR}
+    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} "latest" ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}
+    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} ${CI_COMMIT_SHA} ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}
+
+artifacts-store-top-speed:
+  extends: .artifacts-store
+  variables:
+    ARTIFACT_DIR: top_speed
+    ARTIFACT_BUILD_DIR: "top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed"
+
+## Chart Deploy
+
+# anchor for setting up tiller and helm
+.setup-helm-script: &setup-helm-script |
+  # configure helm and local tiller
+  ./scripts/tiller-init.sh
+  nohup ./scripts/tiller-start.sh &
+  source ./scripts/helm-init.sh
+  helm version --debug # check to make sure it can connect
+
+.helm-job: &helm-job-template
+  image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.1.0
+  variables:
+    TILLER_NAMESPACE: "tiller"
+    HELM_HOST: "localhost:44134"
+    # KUBE_NAMESPACE: "" # override
+    # RELEASE_NAME: "" # override with name for release
+    # HELM_UPGRADE_EXTRA_ARGS: "" override if needed
+  only:
+    refs:
+      - master
+
+.chart-deploy:
+  extends: .helm-job
+  variables:
+    CHART_DIR: "charts/ff-sf2020"
+    # PRE_SCRIPT: "" # override to add a script to execute right before the helm install
+    # POST_SCRIPT: "" # override to add a script to execute right after the helm install
+    # CHART_NAME: "" # override with specific chart name
+    # RELEASE_NAME: "" # override with name for release
+  #  can use before_script to set up {PRE,POST}_SCRIPT
+  #  before_script:
+  script:
+    - *setup-helm-script
+    # see: https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/blob/393bc3a5774ea46285104f1221135a1ecc0c679d/src/bin/auto-deploy
+    - apk add --no-cache gettext # for envsubst
+    - auto-deploy ensure_namespace
+    - |
+      if [[ -e "$PRE_SCRIPT" ]]; then
+        bash "$PRE_SCRIPT"
+      fi
+    # Values files can be set for each environment in the GitLab CI/CD settings as "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES in SCREAMING_SNAKE_CASE
+    - VALUES_FILE_VAR_NAME=$(printf "%s" "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES | tr '-' '_' | awk '{ print toupper($0) }')
+    # expand the generated values file name, and use a temp values file if one doesn't exist
+    - |
+      if [[ -z ${!VALUES_FILE_VAR_NAME+x} ]]; then
+        echo "values file not provided, using empty."
+        VALUES_FILE="values.yaml"
+      else
+        VALUES_FILE="${!VALUES_FILE_VAR_NAME}"
+      fi
+    - '[[ ! -e "$VALUES_FILE" ]] && echo "values file "$VALUES_FILE" does not exist, creating empty." && touch "$VALUES_FILE"'
+    - SUBSTITUTED_VALUES_FILE="$VALUES_FILE"_substituted
+    - envsubst <"$VALUES_FILE" > "$SUBSTITUTED_VALUES_FILE"
+    - export CHART="$CHART_DIR"/"$CHART_NAME"
+    - helm dependency update "$CHART"
+    - echo "Releasing $CHART as $RELEASE_NAME with values from $SUBSTITUTED_VALUES_FILE into the namespace $KUBE_NAMESPACE"
+    - |
+      helm upgrade --install \
+                   --wait \
+                   --namespace="$KUBE_NAMESPACE" \
+                   --values="$SUBSTITUTED_VALUES_FILE" \
+                   $HELM_UPGRADE_EXTRA_ARGS \
+                   "$RELEASE_NAME" \
+                   "$CHART"
+    - |
+      if [[ -e "$POST_SCRIPT" ]]; then
+        bash "$POST_SCRIPT"
+      fi
+
+.rollback:
+  extends: .helm-job
+  variables:
+    REVISION: "0" # default rollback to the last release: https://github.com/helm/helm/pull/5228
+  # RELEASE_NAME: "" # override with name for release
+  allow_failure: false
+  when: manual
+  script:
+    - *setup-helm-script
+    - helm rollback --wait "$RELEASE_NAME" "$REVISION"
+
+.dev-job: &dev-job-template
+  stage: deploy-dev
+  environment:
+    name: dev
+
+.chart-deploy-dev: &chart-deploy-dev-template
+  <<: *dev-job-template
+  extends: .chart-deploy
+  allow_failure: true
+
+.rollback-dev: &rollback-dev-template
+  <<: *dev-job-template
+  extends: .rollback
+
+.prod-job: &prod-job-template
+  stage: deploy-prod
+  environment:
+    name: prod
+
+.chart-deploy-prod: &chart-deploy-prod-template
+  <<: *prod-job-template
+  extends: .chart-deploy
+  when: manual
+
+.rollback-prod: &rollback-prod-template
+  <<: *prod-job-template
+  extends: .rollback
+
+## Infrastructure
+
+.infrastructure: &infrastructure-template
+  variables:
+    RELEASE_NAME: "ff-sf2020-top-speed-infrastructure"
+    CHART_NAME: "infrastructure"
+    KUBE_NAMESPACE: "ff-sf2020"
+  only:
+    changes:
+      # no application code, just Chart resources
+      - charts/ff-sf2020/infrastructure/**/*
+      - .gitlab-ci.yml
+
+deploy-infrastructure-dev:
+  <<: *chart-deploy-dev-template
+  <<: *infrastructure-template
+  needs:
+    # since no code, just wait for everything in the test stage,
+    # but skip the artifact uploading release stage
+    - "bazel-integration-test"
+    - "bazel-unit-test"
+    - "bazel-lint"
+    - "lint-charts"
+
+rollback-infrastructure-dev:
+  <<: *rollback-dev-template
+  <<: *infrastructure-template
+
+deploy-infrastructure-prod:
+  <<: *chart-deploy-prod-template
+  <<: *infrastructure-template
+  allow_failure: true # until: https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/issues/28
+  needs:
+    - "deploy-infrastructure-dev"
+
+rollback-infrastructure-prod:
+  <<: *rollback-prod-template
+  <<: *infrastructure-template
+  needs:
+    # until can depend on job in same stage: https://gitlab.com/gitlab-org/gitlab/issues/30632
+    - "deploy-infrastructure-dev"
+
+## Top Speed
+
+.top-speed: &top-speed-template
+  variables:
+    CHART_NAME: "top-speed"
+    KUBE_NAMESPACE: "ff-sf2020"
+    RELEASE_NAME: "ff-sf2020-top-speed"
+  only:
+    changes:
+      - charts/ff-sf2020/top-speed/**/*
+      - .gitlab-ci.yml
+      # NOTE: there is probably a way to integrate deployment with bazel and only
+      # deploy if a dependency has changed,
+      # but for now we'll have to list them all dependencies manually
+      - WORKSPACE
+
+.top-speed-deploy: &top-speed-deploy-template
+  <<: *top-speed-template
+  before_script:
+    - export HELM_UPGRADE_EXTRA_ARGS="--set artifactJarUri=s3://fts-ff-sf2020-artifacts/top-speed/$CI_COMMIT_SHA.jar"
+
+deploy-top-speed-dev:
+  <<: *chart-deploy-dev-template
+  <<: *top-speed-deploy-template
+  needs:
+    - "artifacts-store-top-speed"
+
+rollback-top-speed-dev:
+  <<: *rollback-dev-template
+  <<: *top-speed-template

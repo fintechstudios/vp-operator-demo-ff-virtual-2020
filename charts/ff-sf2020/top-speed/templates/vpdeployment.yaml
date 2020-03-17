@@ -1,0 +1,77 @@
+apiVersion: ververicaplatform.fintechstudios.com/v1beta2
+kind: VpDeployment
+metadata:
+  name: {{ template "top-speed.fullname" . }}
+  labels:
+  {{ include "top-speed.labels" . | nindent 4 }}
+spec:
+  deploymentTargetName: {{.Values.vpDeploymentTarget | quote }}
+  metadata:
+    name: {{ template "top-speed.fullname" . }}
+    labels:
+      env: {{.Values.env | quote }}
+      {{- if .Values.labels }}
+    {{- toYaml .Values.labels | nindent 6 }}
+    {{- end }}
+    annotations:
+      {{- /* Ensure changes to the runtime config triggers a job upgrade */}}
+      checksum/config: {{ include (print $.Template.BasePath "/params-properties-configmap.yaml") . | sha256sum }}
+      env: {{ .Values.env | quote }}
+      {{- if ne .Values.env "prod" }}
+      license/testing: "true"
+      {{- end }}
+      {{- if .Values.annotations }}
+    {{- toYaml .Values.annotations | nindent 6 }}
+    {{- end }}
+    namespace: {{.Values.vpNamespace}}
+  spec:
+    state: RUNNING
+    upgradeStrategy:
+      kind: STATEFUL
+    restoreStrategy:
+      kind: LATEST_STATE
+    maxSavepointCreationAttempts: {{.Values.maxSavepointCreationAttempts}}
+    maxJobCreationAttempts: {{.Values.maxJobCreationAttempts}}
+    template:
+      metadata: {}
+      spec:
+        artifact:
+          kind: "JAR"
+          jarUri: {{.Values.artifactJarUri}}
+          flinkVersion: {{.Values.artifactFlinkVersion | quote }}
+          flinkImageRegistry: {{.Values.artifactFlinkImageRegistry | quote }}
+          flinkImageRepository: {{.Values.artifactFlinkImageRepository | quote }}
+          flinkImageTag: {{.Values.artifactFlinkImageTag | quote }}
+          entryClass: {{.Values.artifactEntryClass}}
+          ##  From the volume mounts
+          mainArgs: "--params-file /var/run/config-maps/params/params.properties"
+        parallelism: {{ .Values.parallelism }}
+        resources:
+        {{- toYaml .Values.resources | nindent 10 }}
+        flinkConfiguration:
+        {{- toYaml .Values.flinkConfiguration | nindent 10 }}
+        logging:
+          log4jLoggers:
+        {{- toYaml .Values.log4jLoggers | nindent 12 }}
+        kubernetes:
+          pods:
+            volumeMounts:
+              - name: secret-params
+                volume:
+                  name: secret-params
+                  secret:
+                    secretName: {{ template "top-speed.fullname" . }}-params-secret
+                volumeMount:
+                  name: secret-params
+                  mountPath: /var/run/secrets/secret-params
+              - name: params
+                volume:
+                  name: params
+                  configMap:
+                    name: {{ template "top-speed.fullname" . }}-params-config
+                volumeMount:
+                  name: params
+                  mountPath: /var/run/config-maps/params
+            annotations:
+  {{- toYaml .Values.podAnnotations | nindent 14 }}
+

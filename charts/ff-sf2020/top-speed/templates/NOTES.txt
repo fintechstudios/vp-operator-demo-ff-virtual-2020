@@ -1,0 +1,7 @@
+Deployed the Top Speed application!
+
+Deployed to the VP Namespace {{.Values.vpNamespace}}, targeting {{.Values.vpDeploymentTarget}}.
+
+See it in K8s:
+
+    kubectl get -n {{.Release.Namespace}} vpdeployment/{{include "top-speed.fullname" . }}
