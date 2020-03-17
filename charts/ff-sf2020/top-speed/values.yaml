@@ -21,8 +21,12 @@ resources:
 parallelism: 1
 
 flinkConfiguration:
+  state.backend: "rocksdb"
+  state.checkpoints.num-retained: "2"
   state.checkpoints.dir: "s3://fts-ff-sf2020-state/top-speed/checkpoints/"
   state.savepoints.dir: "s3://fts-ff-sf2020-state/top-speed/savepoints/"
+  high-availability: "vvp-kubernetes"
+  flink.security.ssl.enabled: "true"
   high-availability.storageDir: "s3://fts-ff-sf2020-state/top-speed/high-availability/"
 
 log4jLoggers:
