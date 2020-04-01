@@ -31,7 +31,8 @@ hs_err_pid*
 *.env
 
 # Build tools
-bazel-*
+/bazel-*
+!ci/templates/bazel/*
 .artifacts
 
 user.bazelrc

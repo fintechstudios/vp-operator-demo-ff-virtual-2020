@@ -1,0 +1,10 @@
+.dev-job: &dev-job-template
+  stage: deploy-dev
+  environment:
+    name: dev
+
+
+.prod-job: &prod-job-template
+  stage: deploy-prod
+  environment:
+    name: prod

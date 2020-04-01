@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-export TILLER_NAMESPACE=tiller
+
+export TILLER_NAMESPACE="tiller"
 
 if [[ -n "${1+x}" ]]; then
   TILLER_BIN=${1}

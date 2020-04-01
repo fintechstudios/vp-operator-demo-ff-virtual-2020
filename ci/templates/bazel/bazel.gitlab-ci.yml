@@ -1,0 +1,78 @@
+# Bazel Job
+#
+# Requires:
+#   - 'ci/templates/docker/docker-job.gitlab-ci.yml'
+#
+# Needs variables:
+#   - CI_IMAGE the repository for the CI image with bazel installed, tagged with CI_COMMIT_REF_SLUG
+
+# see: https://blog.donbowman.ca/2018/09/03/navigating-the-restrictions-of-ci-and-bazel/
+#      https://blog.bazel.build/2016/01/27/continuous-integration.html
+.bazel-job: &bazel-job
+  image:
+    name: $CI_IMAGE:$CI_COMMIT_REF_SLUG
+    entrypoint: [""]
+  # since gitlab only caches in the project workspace, must manually move the cache file around
+  variables:
+    TEST_TMPDIR: $CI_PROJECT_DIR/../.cache # where bazel puts the cache
+
+  cache:
+    # bazel should be smart enough to know when to invalidate the cache, but don't want other builds
+    # having the ability to affect the master build - should look into hosting a build
+    # farm if we continue to use bazel in other projects
+    key: bazel-$CI_COMMIT_REF_NAME
+    paths:
+      - .cache
+
+  before_script:
+    - mkdir -p .cache
+    - rm -rf ../.cache
+    - mv .cache ..
+
+  after_script:
+    - mkdir -p .artifacts/testlogs .artifacts/bin
+    # provide an "artifacts:" section in your test job if you want test artifacts available to later jobs
+    # copy artifacts before the cache is moved and symlinks are broken
+    - '[ -d ./bazel-testlogs ] && [ "$(ls -A ./bazel-testlogs)" ] && cp -R ./bazel-testlogs/* .artifacts/testlogs/'
+    # provide an "artifacts:" section in your build job if you want the build artifacts available to later jobs
+    - '[ -d ./bazel-bin ] && [ "$(ls -A ./bazel-bin)" ] && cp -R ./bazel-bin/* .artifacts/bin/'
+    - mv ../.cache .
+
+bazel-build:
+  extends:
+    - .bazel-job
+    - .docker-job
+  stage: build
+  script:
+    - bazel build //...
+
+.bazel-test-job: &bazel-test-job
+  extends: .bazel-job
+  stage: test
+  artifacts:
+    reports:
+      junit:
+        - .artifacts/testlogs/**/*/test.xml
+  needs:
+    - "bazel-build"
+
+## Artifacts
+
+.artifacts-store: &artifacts-store
+  extends: .bazel-job
+  variables:
+    ARTIFACTS_S3_BUCKET: fts-ff-sf2020-artifacts
+    # ARTIFACT_DIR: ""  # must override, the top-level module directory
+    # ARTIFACT_BUILD_DIR: "" # defaults to ${ARTIFACT_DIR}, where to find the build output
+  stage: release
+  only:
+    refs:
+      - master
+  before_script:
+    - curl https://bootstrap.pypa.io/get-pip.py > get-pip.py
+    - python get-pip.py
+    - pip install awscli
+  script:
+    - ./scripts/artifact-sync.sh build ${ARTIFACT_DIR}
+    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} "latest" ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}
+    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} ${CI_COMMIT_SHA} ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}

@@ -1,0 +1,148 @@
+# Helm 2
+# Requires:
+#   - 'ci/templates/environments/environments.gitlab-ci.yml'
+
+.helm-job:
+  image:
+    name: fintechstudios/helm-s3:2
+
+## Deployments + Rollbacks
+
+# anchor for setting up tiller and helm
+.setup-helm-script: &setup-helm-script |
+  # export overridden variables
+  export TILLER_NAMESPACE=$TILLER_NAMESPACE
+  export HELM_HOST=$HELM_HOST
+  export RELEASE_NAME=$RELEASE_NAME
+  export KUBE_NAMESPACE=$KUBE_NAMESPACE
+  # configure helm and local tiller
+  ./scripts/tiller-init.sh
+  nohup ./scripts/tiller-start.sh &
+  source ./scripts/helm-init.sh
+  helm version --debug # check to make sure it can connect
+
+.helm-deploy-job:
+  extends: .helm-job
+  variables:
+    TILLER_NAMESPACE: "tiller"
+    HELM_HOST: "localhost:44134"
+    KUBE_NAMESPACE: "flink" # override
+    # RELEASE_NAME: "" # override with name for release
+    # HELM_UPGRADE_EXTRA_ARGS: "" override if needed
+  only:
+    refs:
+      - master
+
+.helm-deploy:
+  extends: .helm-deploy-job
+  variables:
+    # since the charts are all infrastructure right now, should store in the standard tiller namespace
+    # as we create more, we can override this if it makes sense
+    TILLER_NAMESPACE: "tiller"
+    HELM_HOST: "localhost:44134"
+    KUBE_NAMESPACE: "default" # override
+    CHART_DIR: "charts/stable"
+    # PRE_SCRIPT: "" # override to add a script to execute right before the helm install
+    # POST_SCRIPT: "" # override to add a script to execute right after the helm install
+    # CHART_NAME: "" # override with specific chart name
+    # RELEASE_NAME: "" # override with name for release
+    # any env variables that are prefixed with K8S_SECRET_ will be added as secrets for the app
+  script:
+    - *setup-helm-script
+    # see: https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/blob/master/src/bin/auto-deploy
+    - apk add --no-cache gettext # for envsubst
+    - kubectl get namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
+    - |
+      if [[ -e "$PRE_SCRIPT" ]]; then
+        bash "$PRE_SCRIPT"
+      fi
+    # Values files can be set for each environment in the GitLab CI/CD settings as "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES in SCREAMING_SNAKE_CASE
+    - VALUES_FILE_VAR_NAME=$(printf "%s" "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES | tr '-' '_' | awk '{ print toupper($0) }')
+    # expand the generated values file name, and use a temp values file if one doesn't exist
+    - |
+      if [[ -z ${!VALUES_FILE_VAR_NAME+x} ]]; then
+        echo "values file not provided, using empty."
+        VALUES_FILE="values.yaml"
+      else
+        VALUES_FILE="${!VALUES_FILE_VAR_NAME}"
+      fi
+    - '[[ ! -e "$VALUES_FILE" ]] && echo "values file "$VALUES_FILE" does not exist, creating empty." && touch "$VALUES_FILE"'
+    - SUBSTITUTED_VALUES_FILE="$VALUES_FILE"_substituted
+    - envsubst <"$VALUES_FILE" > "$SUBSTITUTED_VALUES_FILE"
+    - export CHART="$CHART_DIR"/"$CHART_NAME"
+    - helm dependency update "$CHART"
+    - echo "Releasing $CHART as $RELEASE_NAME with values from $SUBSTITUTED_VALUES_FILE into the namespace $KUBE_NAMESPACE"
+    - |
+      helm upgrade --install \
+                   --wait \
+                   --namespace="$KUBE_NAMESPACE" \
+                   --values="$SUBSTITUTED_VALUES_FILE" \
+                   $HELM_UPGRADE_EXTRA_ARGS \
+                   "$RELEASE_NAME" \
+                   "$CHART"
+    - |
+      if [[ -e "$POST_SCRIPT" ]]; then
+        bash "$POST_SCRIPT"
+      fi
+
+.helm-deploy-dev:
+  extends:
+    - .dev-job
+    - .helm-deploy
+  allow_failure: false
+
+.helm-deploy-prod:
+  extends:
+    - .prod-job
+    - .helm-deploy
+  allow_failure: false
+  when: manual
+
+.helm-rollback:
+  extends: .helm-deploy-job
+  variables:
+    REVISION: "0" # default rollback to the last release: https://github.com/helm/helm/pull/5228
+  # RELEASE_NAME: "" # override with name for release
+  allow_failure: false
+  when: manual
+  script:
+    - *setup-helm-script
+    - helm rollback --wait "$RELEASE_NAME" "$REVISION"
+
+.helm-rollback-dev:
+  extends:
+    - .dev-job
+    - .helm-rollback
+
+.helm-rollback-prod:
+  extends:
+    - .prod-job
+    - .helm-rollback
+
+
+## Repo
+
+.helm-repo-build:
+  extends: .helm-job
+  stage: build
+  variables:
+  # CHART_DIR: ""
+  script:
+    # and add all dependencies repos
+    - ./scripts/helm-charts.sh build "$CHART_DIR"
+  needs: [] # can always be started immediately
+
+.helm-repo-lint:
+  stage: test
+  image: gcr.io/kubernetes-charts-ci/test-image:v3.3.2
+  variables:
+    CHART_DIRS: "charts"
+    TARGET_BRANCH: "master"
+    CHART_REPOS: "stable=https://kubernetes-charts.storage.googleapis.com/,incubator=https://kubernetes-charts-incubator.storage.googleapis.com/"
+  script:
+    - git fetch origin "$TARGET_BRANCH" # Needed for change detection
+    - ct lint \
+        --chart-dirs "$CHART_DIRS" \
+        --target-branch "$TARGET_BRANCH" \
+        --chart-yaml-schema chart-schema.yaml \
+        --validate-maintainers=false

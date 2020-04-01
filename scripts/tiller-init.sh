@@ -2,7 +2,7 @@
 
 set -e
 
-NAMESPACE=${TILLER_NAMESPACE:-"tiller"}
+NAMESPACE="tiller"
 
 # Even though we'll be running tiller locally, it still needs a namespace
 kubectl get namespace "$NAMESPACE" || kubectl create namespace "$NAMESPACE"
