@@ -72,6 +72,8 @@ spec:
                 volumeMount:
                   name: params
                   mountPath: /var/run/config-maps/params
+            labels:
+              {{- toYaml .Values.podLabels | nindent 14 }}
             annotations:
-  {{- toYaml .Values.podAnnotations | nindent 14 }}
+              {{- toYaml .Values.podAnnotations | nindent 14 }}
 
