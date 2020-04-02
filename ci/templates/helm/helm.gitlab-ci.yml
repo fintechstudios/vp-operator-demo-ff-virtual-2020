@@ -3,7 +3,6 @@
 .helm-job:
   image:
     name: fintechstudios/helm-s3:2
-    entrypoint: ["/bin/bash"]
 
 ## Deployments + Rollbacks
 
@@ -142,7 +141,7 @@
   # CHART_DIR: ""
   script:
     # and add all dependencies repos
-    - sh ./scripts/helm-charts.sh build "$CHART_DIR"
+    - ./scripts/helm-charts.sh build "$CHART_DIR"
 
 .helm-repo-lint:
   stage: test
