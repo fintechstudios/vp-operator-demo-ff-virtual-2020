@@ -120,6 +120,7 @@ rollback-infrastructure-dev:
     changes:
       - charts/ff-sf2020/top-speed/**/*
       - ci/templates/**/*
+      - scripts/**/*
       - WORKSPACE
       - top_speed/**/*
 
