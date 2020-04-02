@@ -121,6 +121,7 @@ rollback-infrastructure-dev:
       - charts/ff-sf2020/top-speed/**/*
       - ci/templates/**/*
       - WORKSPACE
+      - top_speed/**/*
 
 .top-speed-deploy:
   extends: .top-speed
