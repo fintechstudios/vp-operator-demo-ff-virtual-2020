@@ -61,7 +61,7 @@ maven_install(
 )
 
 maven_install(
-    name = "compile_time",
+    name = "provided",
     artifacts = flink_artifacts(
         neverlink = True,
         scala_version = FLINK_SCALA_VERSION,

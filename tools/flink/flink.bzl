@@ -97,7 +97,7 @@ def _is_provided_dep(dep, scala_version, flink_repo):
 
     return False
 
-def _to_compile_time_dep(dep, flink_repo, flink_provided_repo):
+def _to_provided_dep(dep, flink_repo, flink_provided_repo):
     return dep.replace(flink_repo, flink_provided_repo)
 
 def _provided_deps(deps, scala_version, flink_repo, flink_provided_repo):
@@ -107,10 +107,10 @@ def _provided_deps(deps, scala_version, flink_repo, flink_provided_repo):
     :param flink_repo: the main maven repository where flink dependencies are linked
     :param flink_provided_repo: the maven repo where flink dependencies are not linked
     :returns: the list of dependencies where all flink deps that should be provided
-             are replaced with their compile_time alternatives
+             are replaced with their provided alternatives
     """
     return [
-        dep if not _is_provided_dep(dep, scala_version, flink_repo) else _to_compile_time_dep(dep, flink_repo, flink_provided_repo)
+        dep if not _is_provided_dep(dep, scala_version, flink_repo) else _to_provided_dep(dep, flink_repo, flink_provided_repo)
         for dep in deps
     ]
 
@@ -148,7 +148,7 @@ def flink_java_library(
         resources = [],
         flink_java_library_deps = [],
         flink_repo = "maven",
-        flink_provided_repo = "compile_time"):
+        flink_provided_repo = "provided"):
     native.java_library(
         name = name,
         srcs = srcs,
@@ -170,7 +170,7 @@ def flink_java_binary(
         resources = [],
         flink_java_library_deps = [],
         flink_repo = "maven",
-        flink_provided_repo = "compile_time"):
+        flink_provided_repo = "provided"):
     native.java_binary(
         name = name,
         srcs = srcs,
