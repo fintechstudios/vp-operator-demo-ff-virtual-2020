@@ -16,7 +16,8 @@ bazel-build:
 
 .bazel-test-job-base:
   extends: .bazel-test-job
-  needs: [bazel-build]
+  needs:
+    - "bazel-build"
 
 bazel-unit-test:
   extends: .bazel-test-job-base
@@ -39,6 +40,7 @@ chart-repo-build:
   extends: .helm-repo-build
   variables:
     CHART_DIR: charts/ff-sf2020
+  needs: [] # can be started immediately
 
 lint-charts:
   extends: .helm-repo-lint
@@ -50,10 +52,11 @@ lint-charts:
 ## Artifact Releasing
 
 artifacts-store-top-speed:
-  extends: .artifacts-store
+  extends: .bazel-artifacts-store
   variables:
-    ARTIFACT_DIR: top_speed
-    ARTIFACT_BUILD_DIR: "top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed"
+    S3_DIR: "fts-ff-sf2020-artifacts/top_speed"
+    TARGET: "//top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed:top_speed_pruned_deploy.jar"
+    ARTIFACT: "top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed/top_speed_pruned_deploy.jar"
 
 ## Chart Deploy
 

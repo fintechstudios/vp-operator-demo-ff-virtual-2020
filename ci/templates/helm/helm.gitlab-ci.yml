@@ -139,7 +139,6 @@
   script:
     # and add all dependencies repos
     - sh ./scripts/helm-charts.sh build "$CHART_DIR"
-  needs: [] # can always be started immediately
 
 .helm-repo-lint:
   stage: test

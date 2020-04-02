@@ -1,8 +1,4 @@
-# Bazel Job
-#
-#
-# Needs variables:
-#   - CI_IMAGE the repository for the CI image with bazel installed, tagged with CI_COMMIT_REF_SLUG
+# Bazel
 
 # see: https://blog.donbowman.ca/2018/09/03/navigating-the-restrictions-of-ci-and-bazel/
 #      https://blog.bazel.build/2016/01/27/continuous-integration.html
@@ -55,21 +51,24 @@ bazel-build:
 
 ## Artifacts
 
-.artifacts-store: &artifacts-store
+.bazel-artifacts-store:
   extends: .bazel-job
   variables:
-    ARTIFACTS_S3_BUCKET: fts-ff-sf2020-artifacts
-    # ARTIFACT_DIR: ""  # must override, the top-level module directory
-    # ARTIFACT_BUILD_DIR: "" # defaults to ${ARTIFACT_DIR}, where to find the build output
+    # S3_DIR: "" # required, where to store the built artifacts
+    # TARGET: ""  # required, the bazel build target for the artifact
+    # ARTIFACT: "" # required, where to find the build output in the bazel-bin
   stage: release
   only:
     refs:
       - master
-  before_script:
+  script:
     - curl https://bootstrap.pypa.io/get-pip.py > get-pip.py
     - python get-pip.py
     - pip install awscli
-  script:
-    - ./scripts/artifact-sync.sh build ${ARTIFACT_DIR}
-    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} "latest" ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}
-    - ./scripts/artifact-sync.sh sync ${ARTIFACTS_S3_BUCKET} ${CI_COMMIT_SHA} ${ARTIFACT_DIR} ${ARTIFACT_BUILD_DIR}
+    - echo "Building artifact from target $TARGET"
+    - bazel build "$TARGET"
+    - ARTIFACT_LOCATION=$(bazel info bazel-genfiles)/"$ARTIFACT"
+    - echo "Publishing artifact to s3://$S3_DIR/latest.jar"
+    - aws s3 cp --follow-symlinks "$ARTIFACT_LOCATION" "s3://$S3_DIR/latest.jar"
+    - echo "Publishing artifact to s3://$S3_DIR/$CI_COMMIT_SHA.jar"
+    - aws s3 cp --follow-symlinks "$ARTIFACT_LOCATION" "s3://$S3_DIR/$CI_COMMIT_SHA.jar"

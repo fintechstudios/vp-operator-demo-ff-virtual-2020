@@ -20,9 +20,3 @@ test_suite(
         "//top_speed/src/test/java/com/fintechstudios/ff_sf2020/top_speed:lint"
     ],
 )
-
-# Main application alias
-alias(
-    name = "top_speed",
-    actual = "//top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed",
-)
