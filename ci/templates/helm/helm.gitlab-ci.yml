@@ -6,13 +6,12 @@
 
 ## Deployments + Rollbacks
 
-.helm-dev-job: &dev-job-template
+.helm-dev-job:
   stage: deploy-dev
   environment:
     name: dev
 
-
-.helm-prod-job: &prod-job-template
+.helm-prod-job:
   stage: deploy-prod
   environment:
     name: prod
