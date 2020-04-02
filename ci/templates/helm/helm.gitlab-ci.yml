@@ -25,7 +25,6 @@
   export RELEASE_NAME
   export KUBE_NAMESPACE
   # configure helm and local tiller
-  sh ./scripts/tiller-init.sh
   nohup sh ./scripts/tiller-start.sh &
   . ./scripts/helm-init.sh
   helm version --debug # check to make sure it can connect
