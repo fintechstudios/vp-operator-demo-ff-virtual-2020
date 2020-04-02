@@ -19,10 +19,10 @@
 # anchor for setting up tiller and helm
 .setup-helm-script: &setup-helm-script |
   # export overridden variables
-  export TILLER_NAMESPACE
-  export HELM_HOST
-  export RELEASE_NAME
-  export KUBE_NAMESPACE
+  export TILLER_NAMESPACE=$TILLER_NAMESPACE
+  export HELM_HOST=$HELM_HOST
+  export RELEASE_NAME=$RELEASE_NAME
+  export KUBE_NAMESPACE=$KUBE_NAMESPACE
   # configure helm and local tiller
   nohup ./scripts/tiller-start.sh &
   source ./scripts/helm-init.sh
