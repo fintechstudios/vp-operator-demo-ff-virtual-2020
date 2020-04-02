@@ -36,6 +36,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Modifed by:
+ * - making more configurable through params
+ *
  * An example of grouped stream windowing where different eviction and trigger
  * policies can be used. A source fetches events from cars every 100 msec
  * containing their id, their current speed (kmh), overall elapsed distance (m)
@@ -64,7 +67,7 @@ public class TopSpeed {
     } else {
       System.out.println("Executing TopSpeedWindowing example with default input data set.");
       System.out.println("Use --input to specify file input.");
-      carData = env.addSource(CarSource.create(2));
+      carData = env.addSource(CarSource.create(params.getInt("num-cars", 2)));
     }
 
     int evictionSec = params.getInt("eviction-sec", 10);
