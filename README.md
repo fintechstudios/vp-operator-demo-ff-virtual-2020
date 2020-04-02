@@ -33,18 +33,14 @@ For bazel support, use [the official IntelliJ plugin](https://ij.bazel.build).
       # Add the directories you want added as source here
       # By default, we've added your entire workspace ('.')
       .
-      core
-      infongen-provider
-      document-resolver
+      top_speed
     
     # Automatically includes all relevant targets under the 'directories' above
     derive_targets_from_directories: true
     
     targets:
       # If source code isn't resolving, add additional targets that compile it here
-      //core:core
-      //document-resolver:document_resolver
-      //infongen-provider:infongen_provider
+      //top_speed:top_speed
     
     workspace_type: java
     java_language_level: 8
