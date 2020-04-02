@@ -120,12 +120,12 @@
 
 .helm-rollback-dev:
   extends:
-    - .dev-job
+    - .helm-dev-job
     - .helm-rollback
 
 .helm-rollback-prod:
   extends:
-    - .prod-job
+    - .helm-prod-job
     - .helm-rollback
 
 
