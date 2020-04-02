@@ -59,7 +59,7 @@
   script:
     - *setup-helm-script
     # see: https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/blob/master/src/bin/auto-deploy
-    - apk add --no-cache gettext # for envsubst
+    - apk add --no-cache gettext bash # for envsubst
     - kubectl get namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
     - |
       if [[ -e "$PRE_SCRIPT" ]]; then

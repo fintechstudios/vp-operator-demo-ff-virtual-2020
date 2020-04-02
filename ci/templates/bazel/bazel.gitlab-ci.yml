@@ -8,7 +8,7 @@
 #      https://blog.bazel.build/2016/01/27/continuous-integration.html
 .bazel-job: &bazel-job
   image:
-    name: $CI_IMAGE:$CI_COMMIT_REF_SLUG
+    name: l.gcr.io/google/bazel:2.0.0
     entrypoint: [""]
   # since gitlab only caches in the project workspace, must manually move the cache file around
   variables:
