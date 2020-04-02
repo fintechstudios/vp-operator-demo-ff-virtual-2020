@@ -41,7 +41,14 @@ FLINK_VERSION = "1.10.0"
 FLINK_SCALA_VERSION = "2.11"
 
 maven_install(
-    artifacts = flink_artifacts(
+    artifacts = [
+        # testing
+        maven.artifact(
+            group = "com.google.truth",
+            artifact = "truth",
+            version = "1.0.1",
+        ),
+    ] + flink_artifacts(
         scala_version = FLINK_SCALA_VERSION,
         version = FLINK_VERSION,
     ) + flink_testing_artifacts(

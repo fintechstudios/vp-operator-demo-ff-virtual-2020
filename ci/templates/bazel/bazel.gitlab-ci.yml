@@ -6,7 +6,7 @@
 
 # see: https://blog.donbowman.ca/2018/09/03/navigating-the-restrictions-of-ci-and-bazel/
 #      https://blog.bazel.build/2016/01/27/continuous-integration.html
-.bazel-job: &bazel-job
+.bazel-job:
   image:
     name: l.gcr.io/google/bazel:2.0.0
     entrypoint: [""]
@@ -43,7 +43,7 @@ bazel-build:
   script:
     - bazel build //...
 
-.bazel-test-job: &bazel-test-job
+.bazel-test-job:
   extends: .bazel-job
   stage: test
   artifacts:

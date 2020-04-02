@@ -36,10 +36,10 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Modifed by:
+ * Modified by:
  * - making more configurable through params
  *
- * An example of grouped stream windowing where different eviction and trigger
+ * <p>An example of grouped stream windowing where different eviction and trigger
  * policies can be used. A source fetches events from cars every 100 msec
  * containing their id, their current speed (kmh), overall elapsed distance (m)
  * and a timestamp. The streaming example triggers the top speed of each car
@@ -105,7 +105,7 @@ public class TopSpeed {
   // USER FUNCTIONS
   // *************************************************************************
 
-  private static class CarSource implements SourceFunction<Tuple4<Integer, Integer, Double, Long>> {
+  public static class CarSource implements SourceFunction<Tuple4<Integer, Integer, Double, Long>> {
 
     private static final long serialVersionUID = 1L;
     private Integer[] speeds;
@@ -151,7 +151,7 @@ public class TopSpeed {
     }
   }
 
-  private static class ParseCarData extends RichMapFunction<String, Tuple4<Integer, Integer, Double, Long>> {
+  static class ParseCarData extends RichMapFunction<String, Tuple4<Integer, Integer, Double, Long>> {
     private static final long serialVersionUID = 1L;
 
     @Override
@@ -162,7 +162,7 @@ public class TopSpeed {
     }
   }
 
-  private static class CarTimestamp extends AscendingTimestampExtractor<Tuple4<Integer, Integer, Double, Long>> {
+  static class CarTimestamp extends AscendingTimestampExtractor<Tuple4<Integer, Integer, Double, Long>> {
     private static final long serialVersionUID = 1L;
 
     @Override
