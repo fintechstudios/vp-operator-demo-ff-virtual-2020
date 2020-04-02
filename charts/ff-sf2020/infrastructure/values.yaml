@@ -6,5 +6,3 @@ vpNamespace:
 vpDeploymentTarget:
   ##  Name of the target, which will be referenced by any VpDeployments
   name: "top-speed"
-
-a: 1

@@ -1,12 +1,21 @@
-# Helm 2
-# Requires:
-#   - 'ci/templates/environments/environments.gitlab-ci.yml'
+# Helm 2 Deployment, Rollbacks, Chart building, and Chart linting
 
 .helm-job:
   image:
     name: fintechstudios/helm-s3:2
 
 ## Deployments + Rollbacks
+
+.helm-dev-job: &dev-job-template
+  stage: deploy-dev
+  environment:
+    name: dev
+
+
+.helm-prod-job: &prod-job-template
+  stage: deploy-prod
+  environment:
+    name: prod
 
 # anchor for setting up tiller and helm
 .setup-helm-script: &setup-helm-script |
@@ -87,13 +96,13 @@
 
 .helm-deploy-dev:
   extends:
-    - .dev-job
+    - .helm-dev-job
     - .helm-deploy
   allow_failure: false
 
 .helm-deploy-prod:
   extends:
-    - .prod-job
+    - .helm-prod-job
     - .helm-deploy
   allow_failure: false
   when: manual

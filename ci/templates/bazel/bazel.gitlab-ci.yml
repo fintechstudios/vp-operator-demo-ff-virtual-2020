@@ -1,7 +1,5 @@
 # Bazel Job
 #
-# Requires:
-#   - 'ci/templates/docker/docker-job.gitlab-ci.yml'
 #
 # Needs variables:
 #   - CI_IMAGE the repository for the CI image with bazel installed, tagged with CI_COMMIT_REF_SLUG
@@ -41,7 +39,6 @@
 bazel-build:
   extends:
     - .bazel-job
-    - .docker-job
   stage: build
   script:
     - bazel build //...
