@@ -3,6 +3,7 @@
 .helm-job:
   image:
     name: fintechstudios/helm-s3:2
+    entrypoint: "/bin/bash"
 
 ## Deployments + Rollbacks
 
@@ -24,8 +25,8 @@
   export RELEASE_NAME
   export KUBE_NAMESPACE
   # configure helm and local tiller
-  sh ./scripts/tiller-start.sh &
-  . ./scripts/helm-init.sh
+  nohup ./scripts/tiller-start.sh &
+  source ./scripts/helm-init.sh
   helm version --debug # check to make sure it can connect
 
 .helm-deploy-job:
@@ -63,7 +64,7 @@
     # run the pre-script, if defined
     - |
       if [[ -e "$PRE_SCRIPT" ]]; then
-        sh "$PRE_SCRIPT"
+        bash "$PRE_SCRIPT"
       fi
     # Values files can be set for each environment in the GitLab CI/CD settings
     # as "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES in SCREAMING_SNAKE_CASE
@@ -94,7 +95,7 @@
     # run the post-script, if defined
     - |
       if [[ -e "$POST_SCRIPT" ]]; then
-        sh "$POST_SCRIPT"
+        bash "$POST_SCRIPT"
       fi
 
 .helm-deploy-dev:
