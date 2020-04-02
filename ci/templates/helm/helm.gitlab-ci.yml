@@ -3,7 +3,7 @@
 .helm-job:
   image:
     name: fintechstudios/helm-s3:2
-    entrypoint: "/bin/bash"
+    entrypoint: ["/bin/bash"]
 
 ## Deployments + Rollbacks
 
