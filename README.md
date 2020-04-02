@@ -1,7 +1,22 @@
-# VVP K8s Operator Demo for Flink Forward SF 2020
+# VP K8s Operator Demo for Flink Forward SF 2020
 
 This repo provides an example Flink application that is deployed using the [Ververica Platform K8s Operator][1],
-GitLab CI/CD, and Helm. 
+GitLab CI/CD, and Helm.
+
+## Deployment
+
+Applications are deployed to the [Ververica Platform](https://docs.ververica.com) with the help of
+the [vp-k8s-operator](https://github.com/fintechstudios/ververica-platform-k8s-operator).
+
+Deployment of the applications is done through Helm charts with GitLab / their Kubernetes integration.
+
+Rollbacks are also handled in GitLab -- there is a manual job for every deployment that can be run to revert
+the last release.
+
+CI/CD Variables:
+- `${RELEASE_NAME}_${CI_ENVIRONMENT_NAME}_VALUES` 'File' variable, a Helm `values.yaml` file to use,
+which can contain $ENV variables to be swapped in. Needs to be named in SCREAMING_SNAKE_CASE. This is the
+place to store secrets and environment-specific config.
 
 ## Local Setup
 
@@ -86,21 +101,5 @@ Ex:
 ```shell
 ./scripts/bazel-test-dotenv.sh .env //:int-tests
 ```
-
-## Deployment
-
-Applications are deployed to the [Ververica Platform](docs.ververica.com/stream/application_manager) with the help of
-the [K8s controller](https://github.com/fintechstudios/ververica-platform-k8s-controller).
-
-Deployment of the applications is done through Helm charts with GitLab / their Kubernetes integration.
-Deployments will only be queued if there are changes to a chart, an application's code/ its dependencies, or the ci deploy config.
-
-Rollbacks are also handled in GitLab -- there is a manual job for every deployment that can be run to revert
-the last release.
-
-CI/CD Variables:
-- `${RELEASE_NAME}_${CI_ENVIRONMENT_NAME}_VALUES` 'File' variable, a Helm `values.yaml` file to use,
-which can contain $ENV variables to be swapped in. Needs to be named in SCREAMING_SNAKE_CASE. This is the
-place to store secrets and environment-specific config.
 
 [1]: https://github.com/fintechstudios/ververica-platform-k8s-operator

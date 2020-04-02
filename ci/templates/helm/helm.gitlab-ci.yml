@@ -20,14 +20,14 @@
 # anchor for setting up tiller and helm
 .setup-helm-script: &setup-helm-script |
   # export overridden variables
-  export TILLER_NAMESPACE=$TILLER_NAMESPACE
-  export HELM_HOST=$HELM_HOST
-  export RELEASE_NAME=$RELEASE_NAME
-  export KUBE_NAMESPACE=$KUBE_NAMESPACE
+  export TILLER_NAMESPACE
+  export HELM_HOST
+  export RELEASE_NAME
+  export KUBE_NAMESPACE
   # configure helm and local tiller
-  ./scripts/tiller-init.sh
-  nohup ./scripts/tiller-start.sh &
-  source ./scripts/helm-init.sh
+  sh ./scripts/tiller-init.sh
+  nohup sh ./scripts/tiller-start.sh &
+  . ./scripts/helm-init.sh
   helm version --debug # check to make sure it can connect
 
 .helm-deploy-job:
@@ -60,12 +60,15 @@
     - *setup-helm-script
     # see: https://gitlab.com/gitlab-org/cluster-integration/auto-deploy-image/blob/master/src/bin/auto-deploy
     - apk add --no-cache gettext bash # for envsubst
+    # ensure the target namespace exists
     - kubectl get namespace "$KUBE_NAMESPACE" || kubectl create namespace "$KUBE_NAMESPACE"
+    # run the pre-script, if defined
     - |
       if [[ -e "$PRE_SCRIPT" ]]; then
-        bash "$PRE_SCRIPT"
+        sh "$PRE_SCRIPT"
       fi
-    # Values files can be set for each environment in the GitLab CI/CD settings as "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES in SCREAMING_SNAKE_CASE
+    # Values files can be set for each environment in the GitLab CI/CD settings
+    # as "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES in SCREAMING_SNAKE_CASE
     - VALUES_FILE_VAR_NAME=$(printf "%s" "$RELEASE_NAME"_"$CI_ENVIRONMENT_NAME"_VALUES | tr '-' '_' | awk '{ print toupper($0) }')
     # expand the generated values file name, and use a temp values file if one doesn't exist
     - |
@@ -76,9 +79,10 @@
         VALUES_FILE="${!VALUES_FILE_VAR_NAME}"
       fi
     - '[[ ! -e "$VALUES_FILE" ]] && echo "values file "$VALUES_FILE" does not exist, creating empty." && touch "$VALUES_FILE"'
-    - SUBSTITUTED_VALUES_FILE="$VALUES_FILE"_substituted
+    - export SUBSTITUTED_VALUES_FILE="$VALUES_FILE"_substituted
     - envsubst <"$VALUES_FILE" > "$SUBSTITUTED_VALUES_FILE"
     - export CHART="$CHART_DIR"/"$CHART_NAME"
+    # ensure chart dependencies are up-to-date
     - helm dependency update "$CHART"
     - echo "Releasing $CHART as $RELEASE_NAME with values from $SUBSTITUTED_VALUES_FILE into the namespace $KUBE_NAMESPACE"
     - |
@@ -89,9 +93,10 @@
                    $HELM_UPGRADE_EXTRA_ARGS \
                    "$RELEASE_NAME" \
                    "$CHART"
+    # run the post-script, if defined
     - |
       if [[ -e "$POST_SCRIPT" ]]; then
-        bash "$POST_SCRIPT"
+        sh "$POST_SCRIPT"
       fi
 
 .helm-deploy-dev:
