@@ -24,6 +24,7 @@
   export RELEASE_NAME=$RELEASE_NAME
   export KUBE_NAMESPACE=$KUBE_NAMESPACE
   # configure helm and local tiller
+  ./scripts/tiller-init.sh
   nohup ./scripts/tiller-start.sh &
   source ./scripts/helm-init.sh
   helm version --debug # check to make sure it can connect
@@ -33,7 +34,7 @@
   variables:
     TILLER_NAMESPACE: "tiller"
     HELM_HOST: "localhost:44134"
-    KUBE_NAMESPACE: "flink" # override
+    # KUBE_NAMESPACE: "" # override
     # RELEASE_NAME: "" # override with name for release
     # HELM_UPGRADE_EXTRA_ARGS: "" override if needed
   only:
