@@ -8,4 +8,5 @@ data:
   params.properties: |
     eviction-sec=10
     trigger-meters=50
+    car-distance-modifier="4.0"
 
