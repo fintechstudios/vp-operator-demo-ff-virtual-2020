@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Modified by:
  * - making more configurable through params
+ * - created a bad new feature for distance modification
  *
  * <p>An example of grouped stream windowing where different eviction and trigger
  * policies can be used. A source fetches events from cars every 100 msec
@@ -67,11 +68,15 @@ public class TopSpeed {
     } else {
       System.out.println("Executing TopSpeedWindowing example with default input data set.");
       System.out.println("Use --input to specify file input.");
-      carData = env.addSource(CarSource.create(params.getInt("num-cars", 2)));
+      carData = env.addSource(CarSource.create(
+          params.getInt("num-cars", 2),
+          params.getInt("car-distance-modifier", 3))
+      );
     }
 
     int evictionSec = params.getInt("eviction-sec", 10);
     double triggerMeters = params.getDouble("trigger-meters", 50);
+
 
     DataStream<Tuple4<Integer, Integer, Double, Long>> topSpeeds = carData
         .assignTimestampsAndWatermarks(new CarTimestamp())
@@ -110,20 +115,22 @@ public class TopSpeed {
     private static final long serialVersionUID = 1L;
     private Integer[] speeds;
     private Double[] distances;
+    private int distanceModifier;
 
     private Random rand = new Random();
 
     private volatile boolean isRunning = true;
 
-    private CarSource(int numOfCars) {
+    private CarSource(int numOfCars, int distanceModifier) {
+      this.distanceModifier = distanceModifier;
       speeds = new Integer[numOfCars];
       distances = new Double[numOfCars];
       Arrays.fill(speeds, 50);
       Arrays.fill(distances, 0d);
     }
 
-    public static CarSource create(int cars) {
-      return new CarSource(cars);
+    public static CarSource create(int cars, int distanceModifier) {
+      return new CarSource(cars, distanceModifier);
     }
 
     @Override
@@ -137,7 +144,7 @@ public class TopSpeed {
           } else {
             speeds[carId] = Math.max(0, speeds[carId] - 5);
           }
-          distances[carId] += speeds[carId] / 3.6d;
+          distances[carId] += speeds[carId] / (float) distanceModifier;
           Tuple4<Integer, Integer, Double, Long> record = new Tuple4<>(carId,
               speeds[carId], distances[carId], System.currentTimeMillis());
           ctx.collect(record);
