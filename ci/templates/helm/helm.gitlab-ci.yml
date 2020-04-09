@@ -18,7 +18,7 @@
 
 # anchor for setting up tiller and helm
 .setup-helm-script: &setup-helm-script |
-  # export overridden variables
+  # export necessary variables
   export TILLER_NAMESPACE=$TILLER_NAMESPACE
   export HELM_HOST=$HELM_HOST
   export RELEASE_NAME=$RELEASE_NAME

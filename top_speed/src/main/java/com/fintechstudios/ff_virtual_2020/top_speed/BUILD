@@ -11,7 +11,7 @@ filegroup(
 flink_java_binary(
     name = "top_speed",
     srcs = [":java-main-srcs"],
-    main_class = "com.fintechstudios.ff_sf2020.top_speed.TopSpeed",
+    main_class = "com.fintechstudios.ff_virtual_2020.top_speed.TopSpeed",
     resources = [
         "//top_speed/src/main/resources:resource_files",
     ],

@@ -1,12 +1,16 @@
-package com.fintechstudios.ff_sf2020.top_speed;
+package com.fintechstudios.ff_virtual_2020.top_speed;
 
 import org.apache.flink.api.java.tuple.Tuple4;
+import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.util.TestStreamEnvironment;
+import org.apache.flink.test.util.MiniClusterWithClientResource;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.List;
 
@@ -15,17 +19,9 @@ import static com.google.common.truth.Truth.assertThat;
 public class TopSpeedTest {
 
   @Nested
-  class ParseCarDataTest implements CollectSinkTestSuite {
-    @Tag(Tags.UNIT)
-    @Test
-    @DisplayName("should parse a single record")
-    void test_ParseValidRecord() {
-      TopSpeed.ParseCarData mapper = new TopSpeed.ParseCarData();
-      Tuple4<Integer, Integer, Double, Long> carData = mapper.map("\"1,2,3,4\"");
-      assertThat(carData).isEqualTo(Tuple4.of(1, 2, 3.0, 4L));
-    }
-
-    @Tag(Tags.INTEGRATION)
+  @Tag(Tags.INTEGRATION)
+  @ExtendWith({MiniClusterExtension.class, CollectSinkExtension.class})
+  class ParseCarDataIntTest {
     @Test
     @DisplayName("should properly map a stream of car data records")
     void test_Map() throws Exception {
@@ -41,11 +37,18 @@ public class TopSpeedTest {
 
       List<Tuple4<Integer, Integer, Double, Long>> data = sink.getValues();
       assertThat(data).hasSize(3);
-      assertThat(data).containsExactly(
-          Tuple4.of(1, 2, 3.0, 4L),
-          Tuple4.of(1, 2, 3.0, 5L),
-          Tuple4.of(1, 2, 3.0, 6L)
-      );
+    }
+  }
+
+  @Nested
+  @Tag(Tags.UNIT)
+  class ParseCarDataUnitTest {
+    @Test
+    @DisplayName("should parse a single record")
+    void test_ParseValidRecord() {
+      TopSpeed.ParseCarData mapper = new TopSpeed.ParseCarData();
+      Tuple4<Integer, Integer, Double, Long> carData = mapper.map("\"1,2,3,4\"");
+      assertThat(carData).isEqualTo(Tuple4.of(1, 2, 3.0, 4L));
     }
   }
 

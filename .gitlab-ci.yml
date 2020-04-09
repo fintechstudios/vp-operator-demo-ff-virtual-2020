@@ -39,13 +39,13 @@ bazel-lint:
 chart-repo-build:
   extends: .helm-repo-build
   variables:
-    CHART_DIR: charts/ff-sf2020
+    CHART_DIR: charts/ff-virtual-2020
   needs: [] # can be started immediately
 
 lint-charts:
   extends: .helm-repo-lint
   variables:
-    CHART_DIRS: "charts/sf2020"
+    CHART_DIRS: "charts/ff-virtual-2020"
   needs:
     - "chart-repo-build"
 
@@ -54,9 +54,9 @@ lint-charts:
 artifacts-store-top-speed:
   extends: .bazel-artifacts-store
   variables:
-    S3_DIR: "fts-ff-sf2020-artifacts/top_speed"
-    TARGET: "//top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed:top_speed_pruned_deploy.jar"
-    ARTIFACT: "top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed/top_speed_pruned_deploy.jar"
+    S3_DIR: "fts-ff-virtual-2020-artifacts/top_speed"
+    TARGET: "//top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed:top_speed_pruned_deploy.jar"
+    ARTIFACT: "top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed/top_speed_pruned_deploy.jar"
 
 ## Chart Deploy
 
@@ -64,14 +64,14 @@ artifacts-store-top-speed:
 
 .infrastructure:
   variables:
-    RELEASE_NAME: "ff-sf2020-top-speed-infrastructure"
-    CHART_DIR: "charts/ff-sf2020"
+    RELEASE_NAME: "ff-virtual-2020-top-speed-infra"
+    CHART_DIR: "charts/ff-virtual-2020"
     CHART_NAME: "infrastructure"
-    KUBE_NAMESPACE: "ff-sf2020"
+    KUBE_NAMESPACE: "ff-virtual-2020"
   only:
     changes:
       # no application code, just Chart resources
-      - charts/ff-sf2020/infrastructure/**/*
+      - charts/ff-virtual-2020/infrastructure/**/*
       - ci/templates/**/*
 
 deploy-infrastructure-dev:
@@ -112,13 +112,13 @@ rollback-infrastructure-dev:
 
 .top-speed:
   variables:
-    CHART_DIR: "charts/ff-sf2020"
+    CHART_DIR: "charts/ff-virtual-2020"
     CHART_NAME: "top-speed"
-    KUBE_NAMESPACE: "ff-sf2020"
-    RELEASE_NAME: "ff-sf2020-top-speed"
+    KUBE_NAMESPACE: "ff-virtual-2020"
+    RELEASE_NAME: "ff-virtual-2020-top-speed"
   only:
     changes:
-      - charts/ff-sf2020/top-speed/**/*
+      - charts/ff-virtual-2020/top-speed/**/*
       - ci/templates/**/*
       - scripts/**/*
       - WORKSPACE
@@ -127,7 +127,9 @@ rollback-infrastructure-dev:
 .top-speed-deploy:
   extends: .top-speed
   before_script:
-    - export HELM_UPGRADE_EXTRA_ARGS="--set artifactJarUri=s3://fts-ff-sf2020-artifacts/top-speed/$CI_COMMIT_SHA.jar"
+    # use the artifact from this commit
+    # as the deployment artifact
+    - export HELM_UPGRADE_EXTRA_ARGS="--set artifactJarUri=s3://fts-ff-virtual-2020-artifacts/top_speed/$CI_COMMIT_SHA.jar"
 
 deploy-top-speed-dev:
   extends:

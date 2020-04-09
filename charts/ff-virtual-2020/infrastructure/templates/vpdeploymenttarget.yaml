@@ -1,4 +1,4 @@
-apiVersion: ververicaplatform.fintechstudios.com/v1beta2
+apiVersion: ververicaplatform.fintechstudios.com/v1beta1
 kind: VpDeploymentTarget
 metadata:
   name: {{.Values.vpDeploymentTarget.name}}

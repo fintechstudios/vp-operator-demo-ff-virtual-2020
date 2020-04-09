@@ -31,11 +31,11 @@ parallelism: 1
 flinkConfiguration:
   state.backend: "rocksdb"
   state.checkpoints.num-retained: "2"
-  state.checkpoints.dir: "s3://fts-ff-sf2020-state/top-speed/checkpoints/"
-  state.savepoints.dir: "s3://fts-ff-sf2020-state/top-speed/savepoints/"
+  state.checkpoints.dir: "s3://fts-ff-virtual-2020-state/top_speed/checkpoints/"
+  state.savepoints.dir: "s3://fts-ff-virtual-2020-state/top_speed/savepoints/"
   high-availability: "vvp-kubernetes"
   flink.security.ssl.enabled: "true"
-  high-availability.storageDir: "s3://fts-ff-sf2020-state/top-speed/high-availability/"
+  high-availability.storageDir: "s3://fts-ff-virtual-2020-state/top_speed/high-availability/"
 
 log4jLoggers:
   "": INFO  #  Root logger
@@ -44,17 +44,17 @@ log4jLoggers:
 # Default artifact configuration, though
 # can be updated at deploy-time
 #
-artifactJarUri: "s3://fts-ff-sf2020-artifacts/top-speed/latest.jar"
-artifactFlinkVersion: "1.10"
-artifactFlinkImageRegistry: "registry.platform.data-artisans.net"
+artifactJarUri: "s3://fts-ff-virtual-2020-artifacts/top_speed/latest.jar"
+artifactFlinkVersion: "1.9"
+artifactFlinkImageRegistry: "registry.ververica.com"
 artifactFlinkImageRepository: "v2.1/flink"
-artifactFlinkImageTag: "1.10.0-stream1-scala_2.11"
-artifactEntryClass: "com.fintechstudios.ff_sf2020.top_speed.TopSpeed"
+artifactFlinkImageTag: "1.9.2-stream2-scala_2.11"
+artifactEntryClass: "com.fintechstudios.ff_virtual_2020.top_speed.TopSpeed"
 
 # Pod configuration
 #
 podLabels: {}
 podAnnotations:
   # AWS annotations supported by kube2iam/KIAM with access to get the Jar Artifact from S3
-  iam.amazonaws.com/role: "k8s-dev-us-east-1-ff-sf2020-top-speed-role"
+  iam.amazonaws.com/role: "k8s-dev-us-east-1-ff-virtual-2020-top-speed-role"
 

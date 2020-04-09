@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.fintechstudios.ff_sf2020.top_speed;
+package com.fintechstudios.ff_virtual_2020.top_speed;
 
 import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.java.tuple.Tuple4;

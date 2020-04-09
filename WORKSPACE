@@ -1,5 +1,5 @@
 workspace(
-    name = "ff_sf2020",
+    name = "ff_virtual_2020",
 )
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
@@ -36,7 +36,7 @@ load("//tools/checkstyle:checkstyle.bzl", "checkstyle_artifacts")
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//:specs.bzl", "maven")
 
-FLINK_VERSION = "1.10.0"
+FLINK_VERSION = "1.9.2"
 
 FLINK_SCALA_VERSION = "2.11"
 

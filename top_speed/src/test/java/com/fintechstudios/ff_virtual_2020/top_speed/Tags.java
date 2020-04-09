@@ -1,4 +1,4 @@
-package com.fintechstudios.ff_sf2020.top_speed;
+package com.fintechstudios.ff_virtual_2020.top_speed;
 
 /**
  * Tags corresponding to test type, ie Unit, Integration, etc.

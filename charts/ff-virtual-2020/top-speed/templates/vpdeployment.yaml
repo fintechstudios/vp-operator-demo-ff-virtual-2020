@@ -1,4 +1,4 @@
-apiVersion: ververicaplatform.fintechstudios.com/v1beta2
+apiVersion: ververicaplatform.fintechstudios.com/v1beta1
 kind: VpDeployment
 metadata:
   name: {{ template "top-speed.fullname" . }}
@@ -16,6 +16,7 @@ spec:
     annotations:
       {{- /* Ensure changes to the runtime config triggers a job upgrade */}}
       checksum/config: {{ include (print $.Template.BasePath "/params-properties-configmap.yaml") . | sha256sum }}
+      checksum/secret: {{ include (print $.Template.BasePath "/params-properties-secret.yaml") . | sha256sum }}
       env: {{ .Values.env | quote }}
       {{- if ne .Values.env "prod" }}
       license/testing: "true"
@@ -44,15 +45,17 @@ spec:
           flinkImageTag: {{.Values.artifactFlinkImageTag | quote }}
           entryClass: {{.Values.artifactEntryClass}}
           ##  From the volume mounts
-          mainArgs: "--params-file /var/run/config-maps/params/params.properties"
+          mainArgs: >-
+            --params-file /var/run/config-maps/params/params.properties
+            --params-file /var/run/secrets/params/params.properties
         parallelism: {{ .Values.parallelism }}
         resources:
-        {{- toYaml .Values.resources | nindent 10 }}
+          {{- toYaml .Values.resources | nindent 10 }}
         flinkConfiguration:
-        {{- toYaml .Values.flinkConfiguration | nindent 10 }}
+          {{- toYaml .Values.flinkConfiguration | nindent 10 }}
         logging:
           log4jLoggers:
-        {{- toYaml .Values.log4jLoggers | nindent 12 }}
+            {{- toYaml .Values.log4jLoggers | nindent 12 }}
         kubernetes:
           pods:
             volumeMounts:
@@ -63,7 +66,7 @@ spec:
                     secretName: {{ template "top-speed.fullname" . }}-params-secret
                 volumeMount:
                   name: secret-params
-                  mountPath: /var/run/secrets/secret-params
+                  mountPath: /var/run/secrets/params
               - name: params
                 volume:
                   name: params
@@ -72,8 +75,6 @@ spec:
                 volumeMount:
                   name: params
                   mountPath: /var/run/config-maps/params
-            labels:
-              {{- toYaml .Values.podLabels | nindent 14 }}
             annotations:
               {{- toYaml .Values.podAnnotations | nindent 14 }}
 

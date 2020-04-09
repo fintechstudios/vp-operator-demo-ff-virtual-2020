@@ -7,10 +7,10 @@ filegroup(
     srcs = glob(["*.java"]),
 )
 
-_PKG = "com.fintechstudios.ff_sf2020.top_speed"
+_PKG = "com.fintechstudios.ff_virtual_2020.top_speed"
 
 _DEPS = [
-    "//top_speed/src/main/java/com/fintechstudios/ff_sf2020/top_speed",
+    "//top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed:top_speed",
     "@maven//:com_google_truth_truth",
     "@maven//:org_apache_flink_flink_core",
     "@maven//:org_apache_flink_flink_runtime_2_11",

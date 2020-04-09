@@ -1,4 +1,4 @@
-# VP K8s Operator Demo for Flink Forward SF 2020
+# VP K8s Operator Demo for Flink Forward Virtual 2020
 
 This repo provides an example Flink application that is deployed using the [Ververica Platform K8s Operator][1],
 GitLab CI/CD, and Helm.
