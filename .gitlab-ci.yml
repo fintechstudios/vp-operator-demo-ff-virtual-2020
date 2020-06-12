@@ -12,7 +12,7 @@ bazel-build:
   extends: .bazel-job
   stage: build
   script:
-    - bazel build //...
+    - bazel fetch //...
 
 .bazel-test-job-base:
   extends: .bazel-test-job
