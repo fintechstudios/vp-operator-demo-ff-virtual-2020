@@ -68,14 +68,16 @@ bazel build //top_speed:top_speed_pruned_deploy.jar
 
 ### Testing
 
-Currently, each module has three testing targets: 
+Currently, there are three types of tests: 
 * `unit-tests` runs unit tests
 * `int-tests` runs integration tests
 * `lint` runs checkstyle
 
+Testing targets should be named as the type of test.
+
 Ex:
 ```shell
-bazel test //top_speed:unit-tests # runs all unit tests for the top_speed module
+bazel query 'attr(name, "lint", tests(//top_speed/...))' | xargs bazel test # runs all lint tests for the top_speed module
 ```
 
 

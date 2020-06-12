@@ -22,17 +22,20 @@ bazel-build:
 bazel-unit-test:
   extends: .bazel-test-job-base
   script:
-    - bazel test //:unit-tests
+    # find all testing targets with the name "unit-tests"
+    - bazel query 'attr(name, "unit-tests", tests(//...))' | xargs bazel test
 
 bazel-integration-test:
   extends: .bazel-test-job-base
   script:
-    - ./scripts/bazel-test-dotenv.sh $ENV_FILE //:int-tests
+    # find all testing targets with the name "int-tests"
+    - bazel query 'attr(name, "int-tests", tests(//...))' | xargs ./scripts/bazel-test-dotenv.sh $ENV_FILE
 
 bazel-lint:
   extends: .bazel-test-job-base
   script:
-    - bazel test //:lint
+    # find all testing targets with the name "lint"
+    - bazel query 'attr(name, "lint", tests(//...))' | xargs bazel test
 
 ## Helm Charts
 
