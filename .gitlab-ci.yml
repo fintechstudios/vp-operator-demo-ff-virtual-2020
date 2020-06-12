@@ -8,7 +8,7 @@ include:
   - local: 'ci/templates/helm/helm.gitlab-ci.yml'
   - local: 'ci/templates/bazel/bazel.gitlab-ci.yml'
 
-bazel-build:
+bazel-fetch:
   extends: .bazel-job
   stage: build
   script:
@@ -17,7 +17,7 @@ bazel-build:
 .bazel-test-job-base:
   extends: .bazel-test-job
   needs:
-    - "bazel-build"
+    - "bazel-fetch"
 
 bazel-unit-test:
   extends: .bazel-test-job-base
