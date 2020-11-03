@@ -21,7 +21,7 @@ http_archive(
 )
 
 ## Flink
-load("//tools/flink:flink.bzl", "ADDONS", "flink_artifacts", "flink_testing_artifacts")
+load("//tools/flink:flink.bzl", "flink_artifacts", "flink_testing_artifacts")
 
 ## JUnit5
 load("//tools/junit:junit5.bzl", "junit_jupiter_java_artifacts", "junit_platform_java_artifacts")
@@ -35,10 +35,7 @@ load("//tools/checkstyle:checkstyle.bzl", "checkstyle_artifacts")
 ## Maven
 load("@rules_jvm_external//:defs.bzl", "maven_install")
 load("@rules_jvm_external//:specs.bzl", "maven")
-
-FLINK_VERSION = "1.9.2"
-
-FLINK_SCALA_VERSION = "2.11"
+load("//tools:defs.bzl", "FLINK_ADDONS", "FLINK_SCALA_VERSION", "FLINK_VERSION")
 
 maven_install(
     artifacts = [
@@ -49,6 +46,7 @@ maven_install(
             version = "1.0.1",
         ),
     ] + flink_artifacts(
+        addons = FLINK_ADDONS,
         scala_version = FLINK_SCALA_VERSION,
         version = FLINK_VERSION,
     ) + flink_testing_artifacts(
@@ -64,18 +62,11 @@ maven_install(
     fetch_sources = True,
     repositories = [
         "https://repo1.maven.org/maven2",
+        "https://jcenter.bintray.com/",
+        # com.github.everit-org.json-schema
+        "https://jitpack.io",
+        # pulsar connector
+        "https://dl.bintray.com/streamnative/maven",
     ],
 )
 
-maven_install(
-    name = "provided",
-    artifacts = flink_artifacts(
-        neverlink = True,
-        scala_version = FLINK_SCALA_VERSION,
-        version = FLINK_VERSION,
-    ),
-    fetch_sources = False,
-    repositories = [
-        "https://repo1.maven.org/maven2",
-    ],
-)

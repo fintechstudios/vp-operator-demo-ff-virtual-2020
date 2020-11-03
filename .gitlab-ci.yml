@@ -58,8 +58,8 @@ artifacts-store-top-speed:
   extends: .bazel-artifacts-store
   variables:
     S3_DIR: "fts-ff-virtual-2020-artifacts/top_speed"
-    TARGET: "//top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed:top_speed_pruned_deploy.jar"
-    ARTIFACT: "top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed/top_speed_pruned_deploy.jar"
+    TARGET: "//top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed:top_speed_deploy.jar"
+    ARTIFACT: "top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed/top_speed_deploy.jar"
 
 ## Chart Deploy
 

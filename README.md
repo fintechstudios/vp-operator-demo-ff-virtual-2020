@@ -57,13 +57,15 @@ The [`tools`](./tools) package contains useful bazel macros for running JUnit an
 
 `bazel` is used as the build tool because it makes working with monorepos a breeze.
 
-The application is built into a fat java jar with the `{module}_pruned_deploy.jar` target.
-The `pruned` jar should has all Flink code that is in the deployment environment removed, similar to Maven's `provided`
-dependencies.
+The application is built into a deployable jar with the `{module}_deploy.jar` target.
+For an uber jar, use just the `{module}.jar` target.
 
 Ex:
 ```shell
-bazel build //top_speed:top_speed_pruned_deploy.jar
+bazel build //top_speed/src/main/java/com/fintechstudios/ff_virtual_2020/top_speed:top_speed_deploy.jar
+
+# uber jar
+bazel build //top_speed:top_speed.jar
 ```
 
 ### Testing
