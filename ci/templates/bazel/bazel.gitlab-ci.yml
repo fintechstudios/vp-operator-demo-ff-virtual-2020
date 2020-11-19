@@ -4,7 +4,7 @@
 #      https://blog.bazel.build/2016/01/27/continuous-integration.html
 .bazel-job:
   image:
-    name: l.gcr.io/google/bazel:2.0.0
+    name: l.gcr.io/google/bazel:3.5.0
     entrypoint: [""]
   # since gitlab only caches in the project workspace, must manually move the cache file around
   variables:
@@ -31,13 +31,6 @@
     # provide an "artifacts:" section in your build job if you want the build artifacts available to later jobs
     - '[ -d ./bazel-bin ] && [ "$(ls -A ./bazel-bin)" ] && cp -R ./bazel-bin/* .artifacts/bin/'
     - mv ../.cache .
-
-bazel-build:
-  extends:
-    - .bazel-job
-  stage: build
-  script:
-    - bazel build //...
 
 .bazel-test-job:
   extends: .bazel-job
